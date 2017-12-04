@@ -146,10 +146,7 @@ def TPS_STN(U, nx, ny, cp, out_size):
 
     def _solve_system(cp, nx, ny):
         
-        gx = 2. / nx # grid x size
-        gy = 2. / ny # grid y size
-        cx = -1. + gx/2. # x coordinate
-        cy = -1. + gy/2. # y coordinate
+
  
         gx = 2. / (nx-1) # grid x size
         gy = 2. / (ny-1) # grid y size
