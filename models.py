@@ -49,7 +49,37 @@ def Blstmpart(x,nh=10):
             out2=tf.reshape(slim.fully_connected(temp2, nh, activation_fn=None),[-1,T,nh])
     return out2
 
+def local(x):
+    with  tf.variable_scope('local'):
+        with slim.arg_scope([slim.conv2d],
+                        activation_fn=tf.nn.relu,
+                        normalizer_fn=slim.batch_norm,
+                        normalizer_params={'is_training': is_training, 'decay': 0.95}):
+            conv1=slim.conv2d(x, 64, 3, 1)
+            pool1=slim.max_pool2d(conv1, [2, 2])
+            conv2=slim.conv2d(pool1, 128, 3, 1)
+            pool2=slim.max_pool2d(conv2, [2, 2])
+            conv3=slim.conv2d(pool2, 256, 3, 1)
+            pool3=slim.max_pool2d(conv3, [2, 2])
+            conv4=slim.conv2d(pool3, 512, 3, 1)
+            pool4=slim.max_pool2d(conv4, [2, 2])
+            temp=slim.flatten(pool4, scope='flatten')
+            fc1=slim.fully_connected(inputs=temp, num_outputs=1024, scope='fc1')
+    return fc1
+def fcforpoint()
+    
+def fcforpoint(input_, output_size, bias_start=0.0, with_w=False):
+    shape = input_.get_shape().as_list()
 
+    with tf.variable_scope("pointLinear"):
+    matrix = tf.get_variable("Matrix", [shape[1], output_size], tf.float32,
+                 tf.random_normal_initializer(stddev=stddev))
+    bias = tf.get_variable("bias", [output_size],
+      initializer=tf.constant_initializer(bias_start))
+    if with_w:
+      return tf.matmul(input_, matrix) + bias, matrix, bias
+    else:
+return tf.matmul(input_, matrix) + bias
 def testcode():
     x=tf.ones([2,32,100,3])
     x=CNNpart(x)
