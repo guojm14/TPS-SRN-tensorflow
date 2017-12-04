@@ -7,4 +7,4 @@ note:
 The code in https://github.com/iwyoo/TPS_STN-tensorflow may have some difference with the paper in some details  
  which has been modified in this version.  
 
-not finished
+unfinished
