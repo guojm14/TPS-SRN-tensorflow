@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Dec  4 10:41:38 2017
+
+@contribute: guojm14
+"""
+
 import tensorflow as tf
 import numpy as np
 
