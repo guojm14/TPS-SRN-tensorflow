@@ -9,6 +9,8 @@ import numpy as np
 import tensorflow as tf 
 from TPS_STN import TPS_STN
 slim=tf.contrib.slim
+from loaddata import dataloader
+# attention cell defined but not used
 def CNNpart(x,is_training=True):
     with tf.variable_scope("CNN"):
         with slim.arg_scope([slim.conv2d],
@@ -32,8 +34,8 @@ def CNNpart(x,is_training=True):
             conv7=slim.conv2d(pool4, 512, 2, 1,padding="VALID")
         
     return conv7
-def Blstmpart(x,nh=10):
-    with tf.variable_scope("BLSTM"):
+def Blstmpart(x,nh=10,index="0"):
+    with tf.variable_scope("BLSTM"+index):
         x=tf.squeeze(x)
         T=x.shape[1]
         with tf.variable_scope('blstm1'):
@@ -125,6 +127,7 @@ def attentionpart(x,label=None,text=None,text_length=None,num_step=20,num_class=
                 out.append(cur_embeddings)
         out=tf.reshape(tf.stack(out),[B,num_step,num_class])
     return out
+
 def testcode():
     x=tf.ones([2,32,100,3])
     point=fcforpoint(local(x))
@@ -134,12 +137,65 @@ def testcode():
     print x
     x=CNNpart(x)
     print x
-    x=Blstmpart(x)
+    x=Blstmpart(x,index='0')
+    x=Blstmpart(x,index='1')
     print x
-    a= attentionpart(x,hidden_size=4)
-    print a
-testcode()
 
+testcode()
+class CRNN(object):
+    def __init__(self,sess,batch_size=64,
+                num_epoch =25,
+                lr=0.001,
+                imagesize=[32,100],
+                pointnum=[5,2],
+                datapath='/home/guojm14/Downloads/IIIT5K/',
+                trainlist='/home/guojm14/Downloads/IIIT5K/traindata.mat',
+                testlist='/home/guojm14/Downloads/IIIT5K/testdata.mat'):
+        self.sess=sess
+        self.lr=lr
+        self.batch_size=batch_size
+        self.num_epoch=num_epoch
+        self.pointnum=[5,2]
+        self.imagesize=imagesize
+        self.trainloader=dataloader(datapath,trainlist,batchsize=self.batch_size,t_name='train')
+        self.testloader=dataloader(datapath,testlist,batchsize=self.batch_size,t_name='test')
+        self.trainloader.start()
+        self.testloader.start()
+        self.build_model() 
+    def build_model(self):
+        self.img=tf.placeholder(tf.float32,[self.batch_size,self.imagesize[0],self.imagesize[1],3])
+        self.label= tf.sparse_placeholder(tf.int32)
+        self.labelp=self.local(self.img)
+        self.loss=tf.reduce_mean(tf.sqrt(tf.reduce_sum(tf.square(self.labelp-self.label),1)))
+        self.loss_sum=tf.summary.scalar('loss',self.loss)
+        self.img_re=TPS_STN(self.img,self.pointnum[0],self.pointnum[1],tf.reshape(self.labelp,[-1,5*2,2]),self.imagesize+[3])
+        
+    def train(self):
+        optimi=tf.train.AdamOptimizer(lr).minimize(self.loss)
+        tf.global_variables_initializer().run()
+        tf.local_variables_initializer().run()
+        self.loss_sum1=tf.summary.merge([self.loss_sum])
+        self.writer=tf.summary.FileWriter('./log',self.sess.graph)
+        
+
+        
+        for i in xrange(int(self.trainloader.length/self.batch_size*self.num_epoch)):
+            
+            traindata,trainlabel=self.trainloader.getdata()
+            if i%100==1:
+                _,loss_str,loss=sess.run([optimi,self.loss_sum1,self.loss],feed_dict={self.img:traindata,self.label:trainlabel})
+                self.writer.add_summary(loss_str,i)
+                print 'epoch '+str(self.trainloader.epoch)+' iter '+str(i)+' loss '+str(loss)
+            else:
+                _=sess.run([optimi],feed_dict={self.img:traindata,self.label:trainlabel})
+            if i%1000==1:
+                testdata,testlabel=self.testloader.getdata()
+                
+                loss,reimg=sess.run([self.loss,self.img_re],feed_dict={self.img:testdata,self.label:testlabel})
+                print 'test '+str(i)+'loss '+str(loss)
+                print reimg.shape
+                save_images(reimg,[8,8],'sample/'+str(i)+'reimg.jpg')
+                save_images(testdata,[8,8],'sample/'+str(i)+'img.jpg')   
         
     
 
