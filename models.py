@@ -193,8 +193,8 @@ class CRNN(object):
         self.l_vars = [var for var in t_vars if 'transform' in var.name]
         self.r_vars = [var for var in t_vars if 'reco' in var.name]
     def train(self):
-        optimi=tf.train.AdamOptimizer(self.lr).minimize(self.loss,var_list=self.r_vars)
-        optimil=tf.train.AdamOptimizer(self.lr*0.05).minimize(self.loss,var_list=self.l_vars)
+        optimi=tf.train.RMSPropOptimizer(self.lr).minimize(self.loss,var_list=self.r_vars)
+        optimil=tf.train.RMSPropOptimizer(self.lr*0.01).minimize(self.loss,var_list=self.l_vars)
         tf.global_variables_initializer().run()
         tf.local_variables_initializer().run()
         self.loss_sum1=tf.summary.merge([self.loss_sum])
