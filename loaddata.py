@@ -11,6 +11,7 @@ import threading
 import Queue
 import numpy as np
 from PIL import Image
+import random
 def sparse_tuple_from(sequences, dtype=np.int32):
     """
     Create a sparse representention of x.
@@ -51,6 +52,8 @@ class dataloader(threading.Thread):
         self.length=len(self.datalist)
         self.epoch=0
         self.size=size
+        self.which=range(self.length)
+        random.shuffle(self.which)
         print 'inited'
     def run(self):
         while(self.on):
@@ -58,18 +61,21 @@ class dataloader(threading.Thread):
             data=[]
             label=[]
             for i in xrange(self.bs):
-                imgname=str(self.datalist[self.index][0][0])
+                imgname=str(self.datalist[self.which[self.index]][0][0])
                 img=np.array(Image.open(os.path.join(self.datapath,imgname)).resize(self.size))
-                imlabel=str(self.datalist[self.index][1][0])
+                if len(img.shape)==2:
+                    img=np.resize(img,[self.size[1],self.size[0],3])
+                imlabel=str(self.datalist[self.which[self.index]][1][0])
                 data.append(img)
                 label.append(imlabel)
                 self.index+=1
                 if self.index==self.length:
+                    random.shuffle(self.which)
                     self.index=0
                     self.epoch+=1
             
             label=sparse_tuple_from(map(string2list,label))
-            data=np.array(data)
+            data=np.array(data)/255.0
             item=(data,label)
             self.dataqueue.put(item)
     def getdata(self):
@@ -77,10 +83,10 @@ class dataloader(threading.Thread):
     def close(self):
         self.on=False
 def testcode():
-    a=dataloader('/home/guojm14/Downloads/IIIT5K/','/home/guojm14/Downloads/IIIT5K/testdata.mat',mode='testdata')
+    a=dataloader('/home/guojm14/Downloads/IIIT5K/','/home/guojm14/Downloads/IIIT5K/testdata.mat',batchsize=64,mode='testdata')
     a.start()
     data,label= a.getdata()
     print data.shape
     print label
     a.close()
-testcode()
+#testcode()
